@@ -1,6 +1,7 @@
 (lang dune 3.16)
+(using menhir 3.0)
 
-(name fol_prover)
+(name prover)
 
 (generate_opam_files true)
 
@@ -16,7 +17,7 @@
 (documentation https://url/to/documentation)
 
 (package
- (name fol_prover)
+ (name prover)
  (synopsis "A short synopsis")
  (description "A longer description")
  (depends ocaml dune)

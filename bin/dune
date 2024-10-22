@@ -1,4 +1,4 @@
 (executable
- (public_name fol_prover)
+ (public_name prover)
  (name main)
- (libraries fol_prover))
+ (libraries prover))

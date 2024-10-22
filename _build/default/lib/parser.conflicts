@@ -1,0 +1,58 @@
+
+** Conflict (shift/reduce) in state 4.
+** Token involved: TERM_ID
+** This state is reached from prog after reading:
+
+PREDICATE_ID LPAREN TERM_ID LPAREN
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+prog 
+formula EOF 
+predicate 
+PREDICATE_ID LPAREN term_list RPAREN 
+                    term 
+                    TERM_ID LPAREN term_list RPAREN 
+                                   (?)
+
+** In state 4, looking ahead at TERM_ID, shifting is permitted
+** because of the following sub-derivation:
+
+term 
+. TERM_ID LPAREN term_list RPAREN 
+
+** In state 4, looking ahead at TERM_ID, reducing production
+** term_list ->
+** is permitted because of the following sub-derivation:
+
+term_list term // lookahead token appears because term can begin with TERM_ID
+. 
+
+** Conflict (shift/reduce) in state 2.
+** Token involved: TERM_ID
+** This state is reached from prog after reading:
+
+PREDICATE_ID LPAREN
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+prog 
+formula EOF 
+predicate 
+PREDICATE_ID LPAREN term_list RPAREN 
+                    (?)
+
+** In state 2, looking ahead at TERM_ID, shifting is permitted
+** because of the following sub-derivation:
+
+term 
+. TERM_ID LPAREN term_list RPAREN 
+
+** In state 2, looking ahead at TERM_ID, reducing production
+** term_list ->
+** is permitted because of the following sub-derivation:
+
+term_list term // lookahead token appears because term can begin with TERM_ID
+. 

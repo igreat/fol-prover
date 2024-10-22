@@ -1,0 +1,20 @@
+type token =
+    TERM_ID of string
+  | RPAREN
+  | PREDICATE_ID of string
+  | OR
+  | NOT
+  | LPAREN
+  | IMPLIES
+  | IFF
+  | FORALL
+  | EXISTS
+  | EOF
+  | AND
+val menhir_begin_marker : int
+val xv_term_list : Ast.term list
+val xv_term : Ast.term
+val xv_prog : Ast.formula
+val xv_predicate : Ast.formula
+val xv_formula : Ast.formula
+val menhir_end_marker : int

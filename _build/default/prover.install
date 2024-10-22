@@ -1,0 +1,8 @@
+lib: [
+  "_build/install/default/lib/prover/META"
+  "_build/install/default/lib/prover/dune-package"
+  "_build/install/default/lib/prover/opam"
+]
+bin: [
+  "_build/install/default/bin/prover"
+]

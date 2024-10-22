@@ -1,2 +1,7 @@
 (library
- (name fol_prover))
+ (name prover))
+
+(menhir
+ (modules parser))
+
+(ocamllex lexer)
