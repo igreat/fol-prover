@@ -1,0 +1,6 @@
+# dune init proj fol_prover
+# OCAMLPARAM: unset
+# Shared cache: disabled
+# Shared cache location: /Users/mujtabaalajmi/.cache/dune/db
+# Workspace root: /Users/mujtabaalajmi/Documents/ocaml-fun/fol_prover
+# Auto-detected concurrency: 8
