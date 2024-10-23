@@ -3,28 +3,6 @@ open Prover
 open Ast
 open Main
 
-(** [string_of_term t] is the string representation of [t]. *)
-let rec string_of_term = function
-  | Var x -> x
-  | Fun (f, ts) ->
-      f ^ "(" ^ String.concat "," (List.map string_of_term ts) ^ ")"
-
-(** [string_of_formula f] is the string representation of [f]. *)
-let rec string_of_formula = function
-  | Not f -> "not " ^ string_of_formula f
-  | And (f1, f2) ->
-      "(" ^ string_of_formula f1 ^ " and " ^ string_of_formula f2 ^ ")"
-  | Or (f1, f2) ->
-      "(" ^ string_of_formula f1 ^ " or " ^ string_of_formula f2 ^ ")"
-  | Implies (f1, f2) ->
-      "(" ^ string_of_formula f1 ^ " -> " ^ string_of_formula f2 ^ ")"
-  | Predicate (p, ts) ->
-      p ^ "(" ^ String.concat "," (List.map string_of_term ts) ^ ")"
-  | Iff (f1, f2) ->
-      "(" ^ string_of_formula f1 ^ " <-> " ^ string_of_formula f2 ^ ")"
-  | Forall (x, f) -> "forall " ^ x ^ " (" ^ string_of_formula f ^ ")"
-  | Exists (x, f) -> "exists " ^ x ^ " (" ^ string_of_formula f ^ ")"
-
 (** [make n s1 s2] makes an OUnit test named [n] that expects
     [s1] to parse to [s2]. *)
 
