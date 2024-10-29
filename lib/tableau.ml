@@ -1,44 +1,83 @@
 open Ast
+open Utils
+module Env = Set.Make (String)
 
-type t = Branch of formula * t * t | Leaf
+type env = Env.t
+type t = Branch of env * formula * t * t | Leaf
+
+let get_env = function Branch (env, _, _, _) -> env | Leaf -> Env.empty
 
 (** [expand f] expands [f] into a tableau. *)
-let rec expand = function
-  | Not f -> expand_not f
-  | And (f1, f2) -> expand_and f1 f2
-  | Or (f1, f2) -> expand_or f1 f2
-  | Implies (f1, f2) -> expand_implies f1 f2
-  | Iff (f1, f2) -> expand_iff f1 f2
-  | Forall (x, f) -> expand_forall x f
-  | Exists (x, f) -> expand_exists x f
-  | Predicate (p, ts) -> Branch (Predicate (p, ts), Leaf, Leaf)
+let rec expand env = function
+  | Not f -> expand_not env f
+  | And (f1, f2) -> expand_and env f1 f2
+  | Or (f1, f2) -> expand_or env f1 f2
+  | Implies (f1, f2) -> expand_implies env f1 f2
+  | Iff (f1, f2) -> expand_iff env f1 f2
+  | Forall (x, f) -> expand_forall env x f
+  | Exists (x, f) -> expand_exists env x f
+  | Predicate _ as pred ->
+      Branch (Env.add (string_of_formula pred) env, pred, Leaf, Leaf)
 
-and expand_not = function
-  | Not f -> expand f
-  | And (f1, f2) -> expand (Or (Not f1, Not f2))
-  | Or (f1, f2) -> expand (And (Not f1, Not f2))
-  | Implies (f1, f2) -> expand (And (f1, Not f2))
-  | Iff (f1, f2) -> expand (Or (And (f1, Not f2), And (Not f1, f2)))
-  | Forall (x, f) -> expand (Exists (x, Not f))
-  | Exists (x, f) -> expand (Forall (x, Not f))
-  | Predicate (p, ts) -> Branch (Not (Predicate (p, ts)), Leaf, Leaf)
+and expand_not env = function
+  | Not f -> expand env f
+  | And (f1, f2) -> expand env (Or (Not f1, Not f2))
+  | Or (f1, f2) -> expand env (And (Not f1, Not f2))
+  | Implies (f1, f2) -> expand env (And (f1, Not f2))
+  | Iff (f1, f2) -> expand env (Or (And (f1, Not f2), And (Not f1, f2)))
+  | Forall (x, f) -> expand env (Exists (x, Not f))
+  | Exists (x, f) -> expand env (Forall (x, Not f))
+  | Predicate _ as pred ->
+      Branch
+        (Env.add (string_of_formula (Not pred)) env, Not pred, Leaf, Leaf)
 
-and expand_and f1 f2 = Branch (And (f1, f2), join (expand f1) (expand f2), Leaf)
-and expand_or f1 f2 = Branch (Or (f1, f2), expand f1, expand f2)
-and expand_implies f1 f2 = Branch (Implies (f1, f2), expand (Not f1), expand f2)
+(* here is where I'll likely need to share envs or maybe in join *)
+and expand_and env f1 f2 =
+  Branch (env, And (f1, f2), join (expand env f1) f2, Leaf)
 
-and expand_iff f1 f2 =
-  Branch (Iff (f1, f2), expand (And (f1, Not f2)), expand (And (Not f1, f2)))
+and expand_or env f1 f2 = Branch (env, Or (f1, f2), expand env f1, expand env f2)
 
-and expand_forall _ _ = Leaf (* TODO *)
-and expand_exists _ _ = Leaf (* TODO *)
+and expand_implies env f1 f2 =
+  Branch (env, Implies (f1, f2), expand env (Not f1), expand env f2)
+
+and expand_iff env f1 f2 =
+  Branch
+    ( env,
+      Iff (f1, f2),
+      expand env (And (f1, Not f2)),
+      expand env (And (Not f1, f2)) )
+
+and expand_forall _ _ _ = Leaf (* TODO *)
+
+(* maybe have special prefix # as a new thingy, and then just give it a number, that way I can go indefinitely *)
+(* introduce a new letter *)
+and expand_exists _ _ _ = Leaf (* TODO *)
 
 (** [join t1 t2] will extend all leaves of [t1] with [t2]. *)
-and join t1 t2 =
-  match t1 with
-  | Branch (f, Leaf, Leaf) -> Branch (f, t2, Leaf)
-  | Branch (f, Leaf, r1) -> Branch (f, Leaf, join r1 t2)
-  | Branch (f, l1, Leaf) -> Branch (f, join l1 t2, Leaf)
-  | Branch (f, l1, r1) -> Branch (f, join l1 t2, join r1 t2)
+and join t f =
+  match t with
+  | Branch (env, f', Leaf, Leaf) -> Branch (env, f', expand env f, Leaf)
+  | Branch (env, f', Leaf, r1) -> Branch (env, f', Leaf, join r1 f)
+  | Branch (env, f', l1, Leaf) -> Branch (env, f', join l1 f, Leaf)
+  | Branch (env, f', l1, r1) -> Branch (env, f', join l1 f, join r1 f)
   | Leaf -> failwith "unexpected Leaf"
 
+
+
+(* * [string_of_tableau t] converts a tableau [t] to its string representation
+let string_of_tableau t =
+  let buffer = Buffer.create 1024 in
+
+  let rec string_of_tableau_aux node prefix is_last =
+    match node with
+    | Leaf ->
+        Buffer.add_string buffer (prefix ^ (if is_last then "└── " else "├── ") ^ ("Leaf") ^ "\n")
+    | Branch (f, left, right) ->
+        Buffer.add_string buffer (prefix ^ (if is_last then "└── " else "├── ") ^ (string_of_formula f) ^ "\n");
+        let new_prefix = prefix ^ (if is_last then "    " else "│   ") in
+        string_of_tableau_aux left new_prefix false;
+        string_of_tableau_aux right new_prefix true
+  in
+
+  string_of_tableau_aux t "" true;
+  Buffer.contents buffer *)

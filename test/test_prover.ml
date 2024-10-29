@@ -2,6 +2,7 @@ open OUnit2
 open Prover
 open Ast
 open Main
+open Utils
 
 (** [make n s1 s2] makes an OUnit test named [n] that expects
     [s1] to parse to [s2]. *)
@@ -9,7 +10,7 @@ open Main
 let make_parse n s1 s2 =
   n >:: fun _ -> assert_equal ~printer:string_of_formula (parse s1) s2
 
-let tests =
+let parse_tests =
   [
     make_parse "predicate with no args v1" "P()" (Predicate ("P", []));
     make_parse "predicate with no args v2" "P" (Predicate ("P", []));
@@ -41,4 +42,4 @@ let tests =
     make_parse "iff" "(P <-> Q)" (Iff (Predicate ("P", []), Predicate ("Q", [])));
   ]
 
-let _ = run_test_tt_main ("suite" >::: tests)
+let _ = run_test_tt_main ("suite" >::: parse_tests)
