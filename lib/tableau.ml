@@ -5,6 +5,8 @@ module Env = Set.Make (String)
 type env = Env.t
 type t = Branch of (env * int) * formula * t * t | Leaf
 
+let max_constants = 10
+
 let get_env = function Branch ((env, _), _, _, _) -> env | Leaf -> Env.empty
 let add_to_env (env, i) s = (Env.add s env, i)
 
@@ -18,7 +20,7 @@ let rec expand env = function
   | Forall (x, f) -> expand_forall env x f
   | Exists (x, f) -> expand_exists env x f
   | Predicate _ as pred ->
-      Branch (add_to_env env (string_of_formula pred), pred, Leaf, Leaf)
+    Branch (add_to_env env (string_of_formula pred), pred, Leaf, Leaf)
 
 and expand_not env = function
   | Not f -> expand env f
@@ -29,8 +31,8 @@ and expand_not env = function
   | Forall (x, f) -> expand env (Exists (x, Not f))
   | Exists (x, f) -> expand env (Forall (x, Not f))
   | Predicate _ as pred ->
-      Branch
-        (add_to_env env (string_of_formula (Not pred)), Not pred, Leaf, Leaf)
+    Branch
+      (add_to_env env (string_of_formula (Not pred)), Not pred, Leaf, Leaf)
 
 (* here is where I'll likely need to share envs or maybe in join *)
 and expand_and env f1 f2 =
@@ -48,7 +50,13 @@ and expand_iff env f1 f2 =
       expand env (And (f1, f2)),
       expand env (And (Not f1, Not f2)) )
 
-and expand_forall _ _ _ = Leaf (* TODO *)
+and expand_forall (env, i) var f = 
+  if i >= max_constants then
+    Leaf (* TODO: handle this better *)
+  else
+    let f_subst = subst_formula var (Var ("#" ^ string_of_int i)) f in
+    let expanded = expand (env, i + 1) f_subst in
+    join expanded (Forall (var, f))
 
 (* maybe have special prefix # as a new thingy, and then just give it a number, that way I can go indefinitely *)
 (* introduce a new letter *)
@@ -65,9 +73,9 @@ and join t f =
   | Branch (env, f', l1, r1) -> Branch (env, f', join l1 f, join r1 f)
   | Leaf -> failwith "unexpected Leaf"
 
-(** TODO: substitution could be better if made lazy rather than eager, 
-    this requires a rather large refactor since I'll need to also carry 
-    a substitution map around inside env *)
+(* TODO: substitution could be better if made lazy rather than eager, 
+   this requires a rather large refactor since I'll need to also carry 
+   a substitution map around inside env *)
 (** [subst_formula x t f] substitutes [x] with [t] in [f]. *)
 and subst_formula x t = function
   | Predicate (name, args) -> Predicate (name, List.map (subst_term x t) args)
@@ -87,16 +95,16 @@ and subst_term x t = function
 let rec string_of_tableau t =
   let buffer = Buffer.create 1024 in
   Buffer.add_string buffer "Tableau\n";
-  
+
   let rec string_of_tableau_aux node prefix is_last =
     match node with
     | Branch (env, f, Leaf, Leaf) ->
-        Buffer.add_string buffer (prefix ^ "└── " ^ string_of_formula f ^ " " ^ string_of_env env ^ "\n")
+      Buffer.add_string buffer (prefix ^ "└── " ^ string_of_formula f ^ " " ^ string_of_env env ^ "\n")
     | Branch (_, f, left, right) ->
-        Buffer.add_string buffer (prefix ^ (if is_last then "└── " else "├── ") ^ string_of_formula f ^ "\n");
-        let new_prefix = prefix ^ (if is_last then "    " else "│   ") in
-        string_of_tableau_aux left new_prefix false;
-        string_of_tableau_aux right new_prefix true
+      Buffer.add_string buffer (prefix ^ (if is_last then "└── " else "├── ") ^ string_of_formula f ^ "\n");
+      let new_prefix = prefix ^ (if is_last then "    " else "│   ") in
+      string_of_tableau_aux left new_prefix false;
+      string_of_tableau_aux right new_prefix true
     | Leaf -> ()
   in
 
