@@ -90,6 +90,26 @@ let expand_tests =
       );
     make_expand "expand exists 1 var" "exists x (P(x))" (Branch ((Env.singleton "P(#0)", 1), Predicate ("P", [Var "#0"]), Leaf, Leaf));
     make_expand "expand exists 2 vars" "exists x (exists y (P(x, y)))" (Branch ((Env.singleton "P(#0, #1)", 2), Predicate ("P", [Var "#0"; Var "#1"]), Leaf, Leaf));
+    make_expand "expand exists 2 vars with outter dependency" "exists x ((P(x) and exists y (P(x, y))))" 
+      (
+        Branch ((Env.empty, 1), And (Predicate ("P", [Var "#0"]), Exists ("y", Predicate ("P", [Var "#0"; Var "y"]))), 
+                Branch ((env_from_list ["P(#0)"], 1), Predicate ("P", [Var "#0"]), 
+                        Branch ((env_from_list ["P(#0)"; "P(#0, #1)"], 2), Predicate ("P", [Var "#0"; Var "#1"]), 
+                                Leaf, 
+                                Leaf),
+                        Leaf), 
+                Leaf)
+      );
+    make_expand "expand exists 2 vars with lexical scoping" "exists x ((P(x) and exists x (P(x))))" 
+      (
+        Branch ((Env.empty, 1), And (Predicate ("P", [Var "#0"]), Exists ("x", Predicate ("P", [Var "x"]))), 
+                Branch ((env_from_list ["P(#0)"], 1), Predicate ("P", [Var "#0"]), 
+                        Branch ((env_from_list ["P(#0)"; "P(#1)"], 2), Predicate ("P", [Var "#1"]), 
+                                Leaf, 
+                                Leaf),
+                        Leaf), 
+                Leaf)
+      );
     make_expand "expand forall 1 var" "forall x (P(x))" 
       (
         Branch ((env_from_list ["P(#0)"], 1), Predicate ("P", [Var "#0"]), 

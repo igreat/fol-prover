@@ -100,8 +100,8 @@ let rec string_of_tableau t =
     match node with
     | Branch (env, f, Leaf, Leaf) ->
       Buffer.add_string buffer (prefix ^ "└── " ^ string_of_formula f ^ " " ^ string_of_env env ^ "\n")
-    | Branch (_, f, left, right) ->
-      Buffer.add_string buffer (prefix ^ (if is_last then "└── " else "├── ") ^ string_of_formula f ^ "\n");
+    | Branch (env, f, left, right) ->
+      Buffer.add_string buffer (prefix ^ (if is_last then "└── " else "├── ") ^ string_of_formula f ^ " " ^ string_of_env env ^ "\n");
       let new_prefix = prefix ^ (if is_last then "    " else "│   ") in
       string_of_tableau_aux left new_prefix false;
       string_of_tableau_aux right new_prefix true
@@ -113,4 +113,4 @@ let rec string_of_tableau t =
 
 (** [string_of_env env] converts an environment [env] to its string representation *)
 and string_of_env (env, i) =
-  "{" ^ string_of_int i ^ "} " ^ "{" ^ String.concat ", " (List.map (fun x -> x) (Env.elements env)) ^ "}"
+  "[" ^ string_of_int i ^ "]" ^ "{" ^ String.concat ", " (List.map (fun x -> x) (Env.elements env)) ^ "}"
