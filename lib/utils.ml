@@ -10,7 +10,7 @@ let rec string_of_term = function
 let rec string_of_formula = function
   | Predicate (p, ts) ->
       p ^ "(" ^ String.concat ", " (List.map string_of_term ts) ^ ")"
-  | Not f -> "¬(" ^ string_of_formula f ^ ")"
+  | Not f -> "¬" ^ string_of_formula f
   | And (f1, f2) ->
       "(" ^ string_of_formula f1 ^ " ∧ " ^ string_of_formula f2 ^ ")"
   | Or (f1, f2) ->

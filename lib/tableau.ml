@@ -44,8 +44,8 @@ and expand_iff env f1 f2 =
   Branch
     ( env,
       Iff (f1, f2),
-      expand env (And (f1, Not f2)),
-      expand env (And (Not f1, f2)) )
+      expand env (And (f1, f2)),
+      expand env (And (Not f1, Not f2)) )
 
 and expand_forall _ _ _ = Leaf (* TODO *)
 
@@ -62,22 +62,26 @@ and join t f =
   | Branch (env, f', l1, r1) -> Branch (env, f', join l1 f, join r1 f)
   | Leaf -> failwith "unexpected Leaf"
 
-
-
-(* * [string_of_tableau t] converts a tableau [t] to its string representation
-let string_of_tableau t =
+(** [string_of_tableau] converts a tableau [t] to its string representation *)
+let rec string_of_tableau t =
   let buffer = Buffer.create 1024 in
-
+  Buffer.add_string buffer "Tableau\n";
+  
   let rec string_of_tableau_aux node prefix is_last =
     match node with
-    | Leaf ->
-        Buffer.add_string buffer (prefix ^ (if is_last then "└── " else "├── ") ^ ("Leaf") ^ "\n")
-    | Branch (f, left, right) ->
-        Buffer.add_string buffer (prefix ^ (if is_last then "└── " else "├── ") ^ (string_of_formula f) ^ "\n");
+    | Branch (env, f, Leaf, Leaf) ->
+        Buffer.add_string buffer (prefix ^ "└── " ^ string_of_formula f ^ " " ^ string_of_env env ^ "\n")
+    | Branch (_, f, left, right) ->
+        Buffer.add_string buffer (prefix ^ (if is_last then "└── " else "├── ") ^ string_of_formula f ^ "\n");
         let new_prefix = prefix ^ (if is_last then "    " else "│   ") in
         string_of_tableau_aux left new_prefix false;
         string_of_tableau_aux right new_prefix true
+    | Leaf -> ()
   in
 
   string_of_tableau_aux t "" true;
-  Buffer.contents buffer *)
+  Buffer.contents buffer
+
+(** [string_of_env env] converts an environment [env] to its string representation *)
+and string_of_env env =
+  "{" ^ String.concat ", " (List.map (fun x -> x) (Env.elements env)) ^ "}"
