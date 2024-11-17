@@ -12,7 +12,7 @@ let make_parse n s1 s2 =
   n >:: fun _ -> assert_equal ~printer:string_of_formula s2 (parse s1)
 
 let make_expand n s1 s2 =
-  n >:: fun _ -> assert_equal ~printer:string_of_tableau s2 (expand (Env.empty) (parse s1))
+  n >:: fun _ -> assert_equal ~printer:string_of_tableau s2 (expand (Env.empty, 0) (parse s1))
 
 let parse_tests =
   [
@@ -48,45 +48,46 @@ let parse_tests =
 
 let expand_tests = 
   [
-    make_expand "expand predicate with no args" "P()" (Branch (Env.singleton "P()", Predicate ("P", []), Leaf, Leaf));
-    make_expand "expand predicate with one arg" "P(x)" (Branch (Env.singleton "P(x)", Predicate ("P", [Var "x"]), Leaf, Leaf));
-    make_expand "expand predicate with multiple args" "P(x, y)" (Branch (Env.singleton "P(x, y)", Predicate ("P", [Var "x"; Var "y"]), Leaf, Leaf));
-    make_expand "expand not" "not P" (Branch (Env.singleton "¬P()", Not (Predicate ("P", [])), Leaf, Leaf));
+    make_expand "expand predicate with no args" "P()" (Branch ((Env.singleton "P()", 0), Predicate ("P", []), Leaf, Leaf));
+    make_expand "expand predicate with one arg" "P(x)" (Branch ((Env.singleton "P(x)", 0), Predicate ("P", [Var "x"]), Leaf, Leaf));
+    make_expand "expand predicate with multiple args" "P(x, y)" (Branch ((Env.singleton "P(x, y)", 0), Predicate ("P", [Var "x"; Var "y"]), Leaf, Leaf));
+    make_expand "expand not" "not P" (Branch ((Env.singleton "¬P()", 0), Not (Predicate ("P", [])), Leaf, Leaf));
     make_expand "expand and" "(P and Q)" 
       (
-        Branch (Env.empty, And (Predicate ("P", []), Predicate ("Q", [])), 
-          Branch (Env.singleton "P()", Predicate ("P", []), 
-            Branch (Env.add "Q()" (Env.singleton "P()"), Predicate ("Q", []), Leaf, Leaf), 
+        Branch ((Env.empty, 0), And (Predicate ("P", []), Predicate ("Q", [])), 
+          Branch ((Env.singleton "P()", 0), Predicate ("P", []), 
+            Branch ((Env.add "Q()" (Env.singleton "P()"), 0), Predicate ("Q", []), Leaf, Leaf), 
             Leaf), 
           Leaf)
       );
     make_expand "expand or" "(P or Q)" 
       (
-        Branch (Env.empty, Or (Predicate ("P", []), Predicate ("Q", [])), 
-          Branch (Env.singleton "P()", Predicate ("P", []), Leaf, Leaf), 
-          Branch (Env.singleton "Q()", Predicate ("Q", []), Leaf, Leaf))
+        Branch ((Env.empty, 0), Or (Predicate ("P", []), Predicate ("Q", [])), 
+          Branch ((Env.singleton "P()", 0), Predicate ("P", []), Leaf, Leaf), 
+          Branch ((Env.singleton "Q()", 0), Predicate ("Q", []), Leaf, Leaf))
       );
     make_expand "expand implies" "(P -> Q)" 
       (
-        Branch (Env.empty, Implies (Predicate ("P", []), Predicate ("Q", [])), 
-          Branch (Env.singleton "¬P()", Not (Predicate ("P", [])), Leaf, Leaf), 
-          Branch (Env.singleton "Q()", Predicate ("Q", []), Leaf, Leaf))
+        Branch ((Env.empty, 0), Implies (Predicate ("P", []), Predicate ("Q", [])), 
+          Branch ((Env.singleton "¬P()", 0), Not (Predicate ("P", [])), Leaf, Leaf), 
+          Branch ((Env.singleton "Q()", 0), Predicate ("Q", []), Leaf, Leaf))
       );
     make_expand "expand iff" "(P <-> Q)" 
       (
-        Branch (Env.empty, Iff (Predicate ("P", []), Predicate ("Q", [])), 
-          Branch (Env.empty, And (Predicate ("P", []), Predicate ("Q", [])), 
-            Branch (Env.singleton "P()", Predicate ("P", []), 
-              Branch (Env.add "Q()" (Env.singleton "P()"), Predicate ("Q", []), Leaf, Leaf), 
+        Branch ((Env.empty, 0), Iff (Predicate ("P", []), Predicate ("Q", [])), 
+          Branch ((Env.empty, 0), And (Predicate ("P", []), Predicate ("Q", [])), 
+            Branch ((Env.singleton "P()", 0), Predicate ("P", []), 
+              Branch ((Env.add "Q()" (Env.singleton "P()"), 0), Predicate ("Q", []), Leaf, Leaf), 
               Leaf), 
             Leaf),
-          Branch (Env.empty, And (Not (Predicate ("P", [])), Not (Predicate ("Q", []))),
-            Branch (Env.singleton "¬P()", Not (Predicate ("P", [])), 
-              Branch (Env.add "¬Q()" (Env.singleton "¬P()"), Not (Predicate ("Q", [])), Leaf, Leaf), 
+          Branch ((Env.empty, 0), And (Not (Predicate ("P", [])), Not (Predicate ("Q", []))),
+            Branch ((Env.singleton "¬P()", 0), Not (Predicate ("P", [])), 
+              Branch ((Env.add "¬Q()" (Env.singleton "¬P()"), 0), Not (Predicate ("Q", [])), Leaf, Leaf), 
               Leaf),
             Leaf)
         )
       );
+      make_expand "expand exists 1 var" "exists x (P(x))" (Branch ((Env.singleton "P(#0)", 1), Predicate ("P", [Var "#0"]), Leaf, Leaf));
+      make_expand "expand exists 2 vars" "exists x (exists y (P(x, y)))" (Branch ((Env.singleton "P(#0, #1)", 2), Predicate ("P", [Var "#0"; Var "#1"]), Leaf, Leaf));
   ]
-
 let _ = run_test_tt_main ("suite" >::: parse_tests @ expand_tests)

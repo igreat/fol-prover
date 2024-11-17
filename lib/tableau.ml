@@ -3,9 +3,10 @@ open Utils
 module Env = Set.Make (String)
 
 type env = Env.t
-type t = Branch of env * formula * t * t | Leaf
+type t = Branch of (env * int) * formula * t * t | Leaf
 
-let get_env = function Branch (env, _, _, _) -> env | Leaf -> Env.empty
+let get_env = function Branch ((env, _), _, _, _) -> env | Leaf -> Env.empty
+let add_to_env (env, i) s = (Env.add s env, i)
 
 (** [expand f] expands [f] into a tableau. *)
 let rec expand env = function
@@ -17,7 +18,7 @@ let rec expand env = function
   | Forall (x, f) -> expand_forall env x f
   | Exists (x, f) -> expand_exists env x f
   | Predicate _ as pred ->
-      Branch (Env.add (string_of_formula pred) env, pred, Leaf, Leaf)
+      Branch (add_to_env env (string_of_formula pred), pred, Leaf, Leaf)
 
 and expand_not env = function
   | Not f -> expand env f
@@ -29,7 +30,7 @@ and expand_not env = function
   | Exists (x, f) -> expand env (Forall (x, Not f))
   | Predicate _ as pred ->
       Branch
-        (Env.add (string_of_formula (Not pred)) env, Not pred, Leaf, Leaf)
+        (add_to_env env (string_of_formula (Not pred)), Not pred, Leaf, Leaf)
 
 (* here is where I'll likely need to share envs or maybe in join *)
 and expand_and env f1 f2 =
@@ -51,7 +52,9 @@ and expand_forall _ _ _ = Leaf (* TODO *)
 
 (* maybe have special prefix # as a new thingy, and then just give it a number, that way I can go indefinitely *)
 (* introduce a new letter *)
-and expand_exists _ _ _ = Leaf (* TODO *)
+and expand_exists (env, i) var f = 
+  let f_subst = subst_formula var (Var ("#" ^ string_of_int i)) f in
+  expand (env, i + 1) f_subst
 
 (** [join t1 t2] will extend all leaves of [t1] with [t2]. *)
 and join t f =
@@ -61,6 +64,24 @@ and join t f =
   | Branch (env, f', l1, Leaf) -> Branch (env, f', join l1 f, Leaf)
   | Branch (env, f', l1, r1) -> Branch (env, f', join l1 f, join r1 f)
   | Leaf -> failwith "unexpected Leaf"
+
+(** TODO: substitution could be better if made lazy rather than eager, 
+    this requires a rather large refactor since I'll need to also carry 
+    a substitution map around inside env *)
+(** [subst_formula x t f] substitutes [x] with [t] in [f]. *)
+and subst_formula x t = function
+  | Predicate (name, args) -> Predicate (name, List.map (subst_term x t) args)
+  | Not f -> Not (subst_formula x t f)
+  | And (f1, f2) -> And (subst_formula x t f1, subst_formula x t f2)
+  | Or (f1, f2) -> Or (subst_formula x t f1, subst_formula x t f2)
+  | Implies (f1, f2) -> Implies (subst_formula x t f1, subst_formula x t f2)
+  | Iff (f1, f2) -> Iff (subst_formula x t f1, subst_formula x t f2)
+  | Forall (y, f) -> if x = y then Forall (y, f) else Forall (y, subst_formula x t f)
+  | Exists (y, f) -> if x = y then Exists (y, f) else Exists (y, subst_formula x t f)
+
+and subst_term x t = function
+  | Var y -> if x = y then t else Var y
+  | Fun (name, args) -> Fun (name, List.map (subst_term x t) args)
 
 (** [string_of_tableau] converts a tableau [t] to its string representation *)
 let rec string_of_tableau t =
@@ -83,5 +104,5 @@ let rec string_of_tableau t =
   Buffer.contents buffer
 
 (** [string_of_env env] converts an environment [env] to its string representation *)
-and string_of_env env =
-  "{" ^ String.concat ", " (List.map (fun x -> x) (Env.elements env)) ^ "}"
+and string_of_env (env, i) =
+  "{" ^ string_of_int i ^ "} " ^ "{" ^ String.concat ", " (List.map (fun x -> x) (Env.elements env)) ^ "}"
