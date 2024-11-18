@@ -136,15 +136,15 @@ let satisfiability_tests =
     (* Biconditionals *)
     make_sat "satisfiable biconditional" "(P <-> Q)" true;
     make_sat "unsatisfiable biconditional with contradiction" "(P <-> not P)" false;
-    
+
     (* Nested Quantifiers *)
     make_sat "satisfiable nested quantifiers (forall exists)" "forall x (exists y (P(x, y)))" true;
     make_sat "unsatisfiable nested quantifiers (forall exists with contradiction)" "forall x (exists y ((P(x, y) and not P(x, y))))" false;
-    
+
     (* Mixed Quantifiers *)
     make_sat "satisfiable mixed quantifiers (exists forall)" "exists x (forall y (P(x, y)))" true;
     make_sat "unsatisfiable mixed quantifiers (exists forall with contradiction)" "exists x (forall y ((P(x, y) and not P(x, y))))" false;
-    
+
     (* Disjunctions *)
     make_sat "satisfiable disjunction" "(P or Q)" true;
     make_sat "unsatisfiable disjunction with contradiction" "(((P or Q) and not P) and not Q)" false;
@@ -156,21 +156,28 @@ let satisfiability_tests =
     (* Biconditionals with Multiple Predicates *)
     make_sat "satisfiable biconditional with multiple predicates" "((P <-> Q) and (R or S))" true;
     make_sat "unsatisfiable biconditional with multiple predicates and contradiction" "(((P <-> Q) and P) and not Q)" false;
-    
+
     (* More Complex Nested Structures *)
     make_sat "satisfiable formula with multiple quantifiers and implications" "forall x ((P(x) -> exists y ((Q(y) and not Q(y)))))" true;
     make_sat "unsatisfiable formula with multiple quantifiers and implications" "forall x (forall y (((P(x) -> Q(y)) and (not Q(y) and P(x)))))" false;
-    
+
     (* Tautologies *)
     make_sat "tautology using biconditional" "(P or not P)" true;
     make_sat "tautology using implication" "(P -> P)" true;
-    
+
     (* Contradictions *)
     make_sat "contradiction with multiple predicates" "((P and Q) and (not P or not Q))" false;
     make_sat "contradiction with quantifiers" "(forall x (P(x)) and exists x (not P(x)))" false;
 
+    (* Formula from lectures *)
+    make_sat 
+      "¬(∀x¬q(x) ∨ ∃x∀y ¬(x < y)) is satisfiable" 
+      "not (
+        forall x (not Q(x))
+        or 
+        exists x (forall y (not P(x, y)))
+      )"
+      true;
   ]
-
-
 
 let _ = run_test_tt_main ("suite" >::: parse_tests @ expand_tests @ satisfiability_tests)
