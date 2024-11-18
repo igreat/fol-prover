@@ -10,10 +10,12 @@ type t =
 
 let max_constants = 10
 
+(** [negate f] converts [f] to [¬f], and [¬¬f] to [f]. *)
 let negate = function
   | Not f -> f
   | f -> Not f
 
+(** [add_to_env (env, i) s] adds [s] to [env] and returns the new environment. *)
 let add_to_env (env, i) s = (Env.add s env, i)
 
 (** [expand f] expands [f] into a tableau. *)
@@ -32,6 +34,7 @@ let rec expand env = function
     else
       Branch (new_env, pred, Open, Open)
 
+(** [expand_not f] expands [¬f] into a tableau. *)
 and expand_not env = function
   | Not f -> expand env f
   | And (f1, f2) -> expand env (Or (Not f1, Not f2))
