@@ -160,6 +160,15 @@ let satisfiability_tests =
     (* More Complex Nested Structures *)
     make_sat "satisfiable formula with multiple quantifiers and implications" "forall x ((P(x) -> exists y ((Q(y) and not Q(y)))))" true;
     make_sat "unsatisfiable formula with multiple quantifiers and implications" "forall x (forall y (((P(x) -> Q(y)) and (not Q(y) and P(x)))))" false;
+    
+    (* Tautologies *)
+    make_sat "tautology using biconditional" "(P or not P)" true;
+    make_sat "tautology using implication" "(P -> P)" true;
+    
+    (* Contradictions *)
+    make_sat "contradiction with multiple predicates" "((P and Q) and (not P or not Q))" false;
+    make_sat "contradiction with quantifiers" "(forall x (P(x)) and exists x (not P(x)))" false;
+
   ]
 
 

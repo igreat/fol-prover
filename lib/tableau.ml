@@ -53,7 +53,11 @@ and expand_not env = function
 
 (** [expand_and f1 f2] expands [f1 and f2] into a tableau. *)
 and expand_and env f1 f2 =
-  Branch (env, And (f1, f2), join_and (expand env f1) f2, Closed env)
+  let t = match f1, f2 with
+    | Forall _, _ -> join_and (expand env f2) f1
+    | _ -> join_and (expand env f1) f2
+  in
+  Branch (env, And (f1, f2), t, Closed env)
 
 (** [join_and t1 t2] will extend all [Open] leaves of [t1] with [t2]. *)
 and join_and t f =
