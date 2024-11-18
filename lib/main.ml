@@ -11,7 +11,7 @@ let parse (s : string) : formula =
 let rec is_closed = function
   | Branch (_, _, l, r) -> is_closed l && is_closed r
   | Closed _ -> true
-  | Leaf -> false
+  | Open -> false
 
 (** [is_satisfiable f] is whether the formula [f] is satisfiable. *)
 let is_satisfiable (f : formula) : bool =

@@ -6,7 +6,7 @@ type env = Env.t
 type t = 
   | Branch of (env * int) * formula * t * t 
   | Closed of (env * int) (* env kept for debugging *)
-  | Leaf (* TODO: rename to Open *)
+  | Open (* TODO: rename to Open *)
 
 let max_constants = 10
 
@@ -30,7 +30,7 @@ let rec expand env = function
     if Env.mem (string_of_formula (negate pred)) (fst env) then
       Closed new_env
     else
-      Branch (new_env, pred, Leaf, Leaf)
+      Branch (new_env, pred, Open, Open)
 
 and expand_not env = function
   | Not f -> expand env f
@@ -46,7 +46,7 @@ and expand_not env = function
       Closed new_env
     else
       Branch
-        (new_env, negate pred, Leaf, Leaf)
+        (new_env, negate pred, Open, Open)
 
 (* here is where I'll likely need to share envs or maybe in join *)
 and expand_and env f1 f2 =
@@ -66,7 +66,7 @@ and expand_iff env f1 f2 =
 
 and expand_forall (env, i) var f = 
   if i >= max_constants then
-    Leaf (* TODO: handle this better *)
+    Open (* TODO: handle this better *)
   else
     let f_subst = subst_formula var (Var ("#" ^ string_of_int i)) f in
     let expanded = expand (env, i + 1) f_subst in
@@ -81,12 +81,12 @@ and expand_exists (env, i) var f =
 (** [join t1 t2] will extend all leaves of [t1] with [t2]. *)
 and join t f =
   match t with
-  | Branch (env, f', Leaf, Leaf) -> Branch (env, f', expand env f, Closed env)
+  | Branch (env, f', Open, Open) -> Branch (env, f', expand env f, Closed env)
   | Branch (env, f', Closed env', r1) -> Branch (env, f', Closed env', join r1 f)
   | Branch (env, f', l1, Closed env') -> Branch (env, f', join l1 f, Closed env')
   | Branch (env, f', l1, r1) -> Branch (env, f', join l1 f, join r1 f)
   | Closed env -> Closed env
-  | Leaf -> failwith "unexpected Leaf"
+  | Open -> failwith "unexpected Open"
 
 (* TODO: substitution could be better if made lazy rather than eager, 
    this requires a rather large refactor since I'll need to also carry 
@@ -120,7 +120,7 @@ let rec string_of_tableau t =
       string_of_tableau_aux right new_prefix true
     | Closed env ->
       Buffer.add_string buffer (prefix ^ (if is_last then "└── " else "├── ") ^ "⊥ " ^ string_of_env env ^ "\n")
-    | Leaf -> ()
+    | Open -> ()
   in
 
   string_of_tableau_aux t "" true;
