@@ -48,15 +48,18 @@ and expand_not env = function
       Branch
         (new_env, negate pred, Open, Open)
 
-(* here is where I'll likely need to share envs or maybe in join *)
+(** [expand_and f1 f2] expands [f1 and f2] into a tableau. *)
 and expand_and env f1 f2 =
   Branch (env, And (f1, f2), join (expand env f1) f2, Closed env)
 
+(** [expand_or f1 f2] expands [f1 or f2] into a tableau. *)
 and expand_or env f1 f2 = Branch (env, Or (f1, f2), expand env f1, expand env f2)
 
+(** [expand_implies f1 f2] expands [f1 -> f2] into a tableau. *)
 and expand_implies env f1 f2 =
   Branch (env, Implies (f1, f2), expand env (Not f1), expand env f2)
 
+(** [expand_iff f1 f2] expands [f1 <-> f2] into a tableau. *)
 and expand_iff env f1 f2 =
   Branch
     ( env,
@@ -64,6 +67,8 @@ and expand_iff env f1 f2 =
       expand env (And (f1, f2)),
       expand env (And (Not f1, Not f2)) )
 
+(** [expand_forall x f] expands [forall x. f] into a tableau. 
+    Note: expansion continues until either the max number of constants is reached or the tableau is closed. *)
 and expand_forall (env, i) var f = 
   if i >= max_constants then
     Open (* TODO: handle this better *)
@@ -72,13 +77,13 @@ and expand_forall (env, i) var f =
     let expanded = expand (env, i + 1) f_subst in
     join expanded (Forall (var, f))
 
-(* maybe have special prefix # as a new thingy, and then just give it a number, that way I can go indefinitely *)
-(* introduce a new letter *)
+(** [expand_exists x f] expands [exists x. f] into a tableau.
+    Introduces a new constant and substitutes it for [x]. *)
 and expand_exists (env, i) var f = 
   let f_subst = subst_formula var (Var ("#" ^ string_of_int i)) f in
   expand (env, i + 1) f_subst
 
-(** [join t1 t2] will extend all leaves of [t1] with [t2]. *)
+(** [join t1 t2] will extend all [Open] leaves of [t1] with [t2]. *)
 and join t f =
   match t with
   | Branch (env, f', Open, Open) -> Branch (env, f', expand env f, Closed env)
@@ -102,6 +107,7 @@ and subst_formula x t = function
   | Forall (y, f) -> if x = y then Forall (y, f) else Forall (y, subst_formula x t f)
   | Exists (y, f) -> if x = y then Exists (y, f) else Exists (y, subst_formula x t f)
 
+(** [subst_term x t t'] substitutes [x] with [t] in [t']. *)
 and subst_term x t = function
   | Var y -> if x = y then t else Var y
   | Fun (name, args) -> Fun (name, List.map (subst_term x t) args)
