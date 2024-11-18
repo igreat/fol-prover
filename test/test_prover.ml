@@ -133,5 +133,13 @@ let expand_tests =
                         Leaf),
                 Leaf)
       );
+    make_expand "formula closes" "(P and not P)" 
+      (
+        Branch ((Env.empty, 0), And (Predicate ("P", []), Not (Predicate ("P", []))), 
+                Branch ((env_from_list ["P()"], 0), Predicate ("P", []), 
+                        Closed (env_from_list ["P()"; "¬P()"], 0),
+                        Leaf),
+                Leaf)
+      );
   ]
 let _ = run_test_tt_main ("suite" >::: parse_tests @ expand_tests)
