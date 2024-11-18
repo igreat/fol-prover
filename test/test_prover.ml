@@ -11,8 +11,16 @@ open Tableau
 let make_parse n s1 s2 =
   n >:: fun _ -> assert_equal ~printer:string_of_formula s2 (parse s1)
 
+(** [make_expand n s1 s2] makes an OUnit test named [n] that expects
+    [s1] to expand to [s2]. *)
 let make_expand n s1 s2 =
   n >:: fun _ -> assert_equal ~printer:string_of_tableau s2 (expand (Env.empty, 0) (parse s1))
+
+(** [make_sat n s is_sat] makes an OUnit test named [n] that expects
+    [s] to be satisfiable if [is_sat] is true, and unsatisfiable if
+    [is_sat] is false. *)
+let make_sat n s is_sat =
+  n >:: fun _ -> assert_equal ~printer:string_of_bool is_sat (is_satisfiable (parse s))
 
 let env_from_list l = List.fold_left (fun acc x -> Env.add x acc) Env.empty l
 let parse_tests =
@@ -119,4 +127,41 @@ let expand_tests =
                 Closed (Env.empty, 0))
       );
   ]
-let _ = run_test_tt_main ("suite" >::: parse_tests @ expand_tests)
+let satisfiability_tests = 
+  [
+    (* Implications *)
+    make_sat "satisfiable implication" "(P -> Q)" true;
+    make_sat "unsatisfiable implication with premises" "(((P -> Q) and P) and not Q)" false;
+
+    (* Biconditionals *)
+    make_sat "satisfiable biconditional" "(P <-> Q)" true;
+    make_sat "unsatisfiable biconditional with contradiction" "(P <-> not P)" false;
+    
+    (* Nested Quantifiers *)
+    make_sat "satisfiable nested quantifiers (forall exists)" "forall x (exists y (P(x, y)))" true;
+    make_sat "unsatisfiable nested quantifiers (forall exists with contradiction)" "forall x (exists y ((P(x, y) and not P(x, y))))" false;
+    
+    (* Mixed Quantifiers *)
+    make_sat "satisfiable mixed quantifiers (exists forall)" "exists x (forall y (P(x, y)))" true;
+    make_sat "unsatisfiable mixed quantifiers (exists forall with contradiction)" "exists x (forall y ((P(x, y) and not P(x, y))))" false;
+    
+    (* Disjunctions *)
+    make_sat "satisfiable disjunction" "(P or Q)" true;
+    make_sat "unsatisfiable disjunction with contradiction" "(((P or Q) and not P) and not Q)" false;
+
+    (* Conjunctions *)
+    make_sat "satisfiable conjunction" "(P and Q)" true;
+    make_sat "unsatisfiable conjunction with contradiction" "((P and Q) and not P)" false;
+
+    (* Biconditionals with Multiple Predicates *)
+    make_sat "satisfiable biconditional with multiple predicates" "((P <-> Q) and (R or S))" true;
+    make_sat "unsatisfiable biconditional with multiple predicates and contradiction" "(((P <-> Q) and P) and not Q)" false;
+    
+    (* More Complex Nested Structures *)
+    make_sat "satisfiable formula with multiple quantifiers and implications" "forall x ((P(x) -> exists y ((Q(y) and not Q(y)))))" true;
+    make_sat "unsatisfiable formula with multiple quantifiers and implications" "forall x (forall y (((P(x) -> Q(y)) and (not Q(y) and P(x)))))" false;
+  ]
+
+
+
+let _ = run_test_tt_main ("suite" >::: parse_tests @ expand_tests @ satisfiability_tests)

@@ -25,7 +25,7 @@ let rec expand env = function
   | Or (f1, f2) -> expand_or env f1 f2
   | Implies (f1, f2) -> expand_implies env f1 f2
   | Iff (f1, f2) -> expand_iff env f1 f2
-  | Forall (x, f) -> expand_forall env x f
+  | Forall (x, f) -> expand_forall env x f 0
   | Exists (x, f) -> expand_exists env x f
   | Predicate _ as pred ->
     let new_env = add_to_env env (string_of_formula pred) in
@@ -53,14 +53,34 @@ and expand_not env = function
 
 (** [expand_and f1 f2] expands [f1 and f2] into a tableau. *)
 and expand_and env f1 f2 =
-  Branch (env, And (f1, f2), join (expand env f1) f2, Closed env)
+  Branch (env, And (f1, f2), join_and (expand env f1) f2, Closed env)
+
+(** [join_and t1 t2] will extend all [Open] leaves of [t1] with [t2]. *)
+and join_and t f =
+  match t with
+  | Branch (env, f', Open, Open) -> 
+    let expanded = expand env f in
+    Branch (env, f', expanded, if expanded = Open then Open else Closed env)
+  | Branch (env, f', Closed env', r1) -> Branch (env, f', Closed env', join_and r1 f)
+  | Branch (env, f', l1, Closed env') -> Branch (env, f', join_and l1 f, Closed env')
+  | Branch (env, f', l1, r1) -> Branch (env, f', join_and l1 f, join_and r1 f)
+  | Closed env -> Closed env
+  | Open -> failwith "unexpected Open in `and` expansion"
 
 (** [expand_or f1 f2] expands [f1 or f2] into a tableau. *)
-and expand_or env f1 f2 = Branch (env, Or (f1, f2), expand env f1, expand env f2)
+and expand_or env f1 f2 = 
+  let left, right = expand env f1, expand env f2 in
+  match left, right with
+  | Open, Open -> Branch (env, Or (f1, f2), Open, Open)
+  | Open, _ -> Branch (env, Or (f1, f2), Closed env, right)
+  | _, Open -> Branch (env, Or (f1, f2), left, Closed env)
+  | _, _ -> Branch (env, Or (f1, f2), left, right)
 
 (** [expand_implies f1 f2] expands [f1 -> f2] into a tableau. *)
 and expand_implies env f1 f2 =
-  Branch (env, Implies (f1, f2), expand env (Not f1), expand env f2)
+  match expand_or env (Not f1) f2 with
+  | Branch (env, _, l, r) -> Branch (env, Implies (f1, f2), l, r)
+  | otherwise -> otherwise
 
 (** [expand_iff f1 f2] expands [f1 <-> f2] into a tableau. *)
 and expand_iff env f1 f2 =
@@ -70,31 +90,36 @@ and expand_iff env f1 f2 =
       expand env (And (f1, f2)),
       expand env (And (Not f1, Not f2)) )
 
-(** [expand_forall x f] expands [forall x. f] into a tableau. 
+(** [expand_forall x f cnt] expands [forall x. f] into a tableau.
     Note: expansion continues until either the max number of constants is reached or the tableau is closed. *)
-and expand_forall (env, i) var f = 
+and expand_forall (env, i) var f var_cnt = 
   if i >= max_constants then
     Open (* TODO: handle this better *)
   else
-    let f_subst = subst_formula var (Var ("#" ^ string_of_int i)) f in
-    let expanded = expand (env, i + 1) f_subst in
-    join expanded (Forall (var, f))
+    let f_subst = subst_formula var (Var ("#" ^ string_of_int var_cnt)) f in
+    let expanded = expand (env, max i (var_cnt + 1)) f_subst in
+    join_forall expanded var f (var_cnt + 1)
+
+(** [join_forall t var f var_cnt] will extend all [Open] leaves of [t] with [f] and [var] replaced with an existing constant. *)
+and join_forall t var f var_cnt =
+  match t with
+  | Branch (env, f', Open, Open) -> 
+    let expanded = expand_forall env var f var_cnt in
+    Branch (env, f', expanded, if expanded = Open then Open else Closed env)
+  | Branch (env, f', Closed env', r1) -> Branch (env, f', Closed env', join_forall r1 var f var_cnt)
+  | Branch (env, f', l1, Closed env') -> Branch (env, f', join_forall l1 var f var_cnt, Closed env')
+  | Branch (env, f', l1, r1) -> Branch (env, f', join_forall l1 var f var_cnt, join_forall r1 var f var_cnt)
+  | Closed env -> Closed env
+  | Open -> failwith "unexpected Open in `forall` expansion"
 
 (** [expand_exists x f] expands [exists x. f] into a tableau.
     Introduces a new constant and substitutes it for [x]. *)
 and expand_exists (env, i) var f = 
-  let f_subst = subst_formula var (Var ("#" ^ string_of_int i)) f in
-  expand (env, i + 1) f_subst
-
-(** [join t1 t2] will extend all [Open] leaves of [t1] with [t2]. *)
-and join t f =
-  match t with
-  | Branch (env, f', Open, Open) -> Branch (env, f', expand env f, Closed env)
-  | Branch (env, f', Closed env', r1) -> Branch (env, f', Closed env', join r1 f)
-  | Branch (env, f', l1, Closed env') -> Branch (env, f', join l1 f, Closed env')
-  | Branch (env, f', l1, r1) -> Branch (env, f', join l1 f, join r1 f)
-  | Closed env -> Closed env
-  | Open -> failwith "unexpected Open"
+  if i >= max_constants then
+    Open (* TODO: handle this better *)
+  else
+    let f_subst = subst_formula var (Var ("#" ^ string_of_int i)) f in
+    expand (env, i + 1) f_subst
 
 (* TODO: substitution could be better if made lazy rather than eager, 
    this requires a rather large refactor since I'll need to also carry 
