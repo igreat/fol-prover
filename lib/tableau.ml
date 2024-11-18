@@ -6,18 +6,13 @@ type env = Env.t
 type t = 
   | Branch of (env * int) * formula * t * t 
   | Closed of (env * int) (* env kept for debugging *)
-  | Leaf
+  | Leaf (* TODO: rename to Open *)
 
 let max_constants = 10
 
 let negate = function
   | Not f -> f
   | f -> Not f
-
-let get_env = function 
-| Branch ((env, _), _, _, _) -> env 
-| Closed (env, _) -> env
-| Leaf -> Env.empty
 
 let add_to_env (env, i) s = (Env.add s env, i)
 
