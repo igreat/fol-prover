@@ -6,7 +6,7 @@ type env = Env.t
 type t = 
   | Branch of (env * int) * formula * t * t 
   | Closed of (env * int) (* env kept for debugging *)
-  | Open (* TODO: rename to Open *)
+  | Open
 
 let max_constants = 10
 
