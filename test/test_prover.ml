@@ -90,8 +90,8 @@ let expand_tests =
         Branch ((Env.empty, 0), And (Predicate ("P", []), Predicate ("Q", [])), 
                 Branch ((Env.singleton "P()", 0), Predicate ("P", []), 
                         Branch ((Env.add "Q()" (Env.singleton "P()"), 0), Predicate ("Q", []), Open, Open), 
-                        Closed (Env.singleton "P()", 0)),
-                Closed (Env.empty , 0))
+                        Closed ((Env.singleton "P()", 0), false)),
+                Closed ((Env.empty, 0), false))
       );
     make_expand "expand or" "(P or Q)" 
       (
@@ -111,13 +111,13 @@ let expand_tests =
                 Branch ((Env.empty, 0), And (Predicate ("P", []), Predicate ("Q", [])), 
                         Branch ((Env.singleton "P()", 0), Predicate ("P", []), 
                                 Branch ((Env.add "Q()" (Env.singleton "P()"), 0), Predicate ("Q", []), Open, Open), 
-                                Closed (Env.singleton "P()", 0)),
-                        Closed (Env.empty, 0)),
+                                Closed ((Env.singleton "P()", 0), false)),
+                        Closed ((Env.empty, 0), false)),
                 Branch ((Env.empty, 0), And (Not (Predicate ("P", [])), Not (Predicate ("Q", []))),
                         Branch ((Env.singleton "¬P()", 0), Not (Predicate ("P", [])), 
                                 Branch ((Env.add "¬Q()" (Env.singleton "¬P()"), 0), Not (Predicate ("Q", [])), Open, Open), 
-                                Closed (Env.singleton "¬P()", 0)),
-                        Closed (Env.empty, 0))
+                                Closed ((Env.singleton "¬P()", 0), false)),
+                        Closed ((Env.empty, 0), false))
                )
       );
     make_expand "expand exists 1 var" "exists x (P(x))" (Branch ((Env.singleton "P(#0)", 1), Predicate ("P", [Var "#0"]), Open, Open));
@@ -129,8 +129,8 @@ let expand_tests =
                         Branch ((env_from_list ["P(#0)"; "P(#0, #1)"], 2), Predicate ("P", [Var "#0"; Var "#1"]), 
                                 Open,
                                 Open),
-                        Closed (env_from_list ["P(#0)"], 1)),
-                Closed (Env.empty, 1))
+                        Closed ((env_from_list ["P(#0)"], 1), false)),
+                Closed ((Env.empty, 1), false))
       );
     make_expand "expand exists 2 vars with lexical scoping" "exists x ((P(x) and exists x (P(x))))" 
       (
@@ -139,16 +139,16 @@ let expand_tests =
                         Branch ((env_from_list ["P(#0)"; "P(#1)"], 2), Predicate ("P", [Var "#1"]), 
                                 Open, 
                                 Open),
-                        Closed (env_from_list ["P(#0)"], 1)),
-                Closed (Env.empty, 1))
+                        Closed ((env_from_list ["P(#0)"], 1), false)),
+                Closed ((Env.empty, 1), false))
       );
     make_expand "formula closes" "(P and not P)" 
       (
         Branch ((Env.empty, 0), And (Predicate ("P", []), Not (Predicate ("P", []))), 
                 Branch ((env_from_list ["P()"], 0), Predicate ("P", []), 
-                        Closed (env_from_list ["P()"; "¬P()"], 0),
-                        Closed (env_from_list ["P()"], 0)),
-                Closed (Env.empty, 0))
+                        Closed ((env_from_list ["P()"; "¬P()"], 0), true),
+                        Closed ((env_from_list ["P()"], 0), false)),
+                Closed ((Env.empty, 0), false))
       );
   ]
 let satisfiability_tests = 

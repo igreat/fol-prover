@@ -31,14 +31,22 @@ let rec string_of_tableau t =
 
   let rec string_of_tableau_aux node prefix is_last =
     match node with
-    | Branch (env, f, left, right) ->
-      Buffer.add_string buffer (prefix ^ (if is_last then "└── " else "├── ") ^ string_of_formula f ^ " " ^ string_of_env env ^ "\n");
+    | Branch (_, f, Closed (_, false), right) ->
+      Buffer.add_string buffer (prefix ^ (if is_last then "└── " else "├── ") ^ string_of_formula f ^ "\n");
+      let new_prefix = prefix ^ (if is_last then "    " else "│   ") in
+      string_of_tableau_aux right new_prefix true
+    | Branch (_, f, left, Closed (_, false)) ->
+      Buffer.add_string buffer (prefix ^ (if is_last then "└── " else "├── ") ^ string_of_formula f ^ "\n");
+      let new_prefix = prefix ^ (if is_last then "    " else "│   ") in
+      string_of_tableau_aux left new_prefix true
+    | Branch (_, f, left, right) ->
+      Buffer.add_string buffer (prefix ^ (if is_last then "└── " else "├── ") ^ string_of_formula f ^ "\n");
       let new_prefix = prefix ^ (if is_last then "    " else "│   ") in
       string_of_tableau_aux left new_prefix false;
       string_of_tableau_aux right new_prefix true
-    | Closed env ->
+    | Closed (env, true) ->
       Buffer.add_string buffer (prefix ^ (if is_last then "└── " else "├── ") ^ "⊥ " ^ string_of_env env ^ "\n")
-    | Open -> ()
+    | _ -> ()
   in
 
   string_of_tableau_aux t "" true;

@@ -5,7 +5,6 @@ open Prover.Tableau
 let parse_file filename =
   let channel = open_in filename in
   let formula_str = really_input_string channel (in_channel_length channel) in
-  print_endline formula_str;
   close_in channel;
   parse formula_str
 
@@ -24,7 +23,7 @@ let () =
     ("--valid", Arg.Set check_valid, "Check if the formula is valid");
     ("--tableau", Arg.Set display_tableau, "Display the tableau");
   ] in
-  
+
   Arg.parse speclist (fun s -> filename := s) usage_msg;
 
   if !filename = "" then begin
@@ -52,4 +51,3 @@ let () =
     print_endline usage_msg;
     exit 1
   end
-

@@ -1,1 +1,6 @@
-P and not P
+(Q -> P)
+and
+(forall x not P(x)) 
+and
+(exists x P(x))
+

@@ -5,10 +5,10 @@ module Env = Set.Make (String)
 type env = Env.t
 type t = 
   | Branch of (env * int) * formula * t * t 
-  | Closed of (env * int) (* env kept for debugging *)
+  | Closed of (env * int) * bool (* ((env, constant_cnt), is_contradiction) is kept for debugging *)
   | Open
 
-let max_constants = 10
+let max_constants = 100
 
 (** [negate f] converts [f] to [¬f], and [¬¬f] to [f]. *)
 let negate = function
@@ -30,7 +30,7 @@ let rec expand env = function
   | Predicate _ as pred ->
     let new_env = add_to_env env (string_of_formula pred) in
     if Env.mem (string_of_formula (negate pred)) (fst env) then
-      Closed new_env
+      Closed (new_env, true)
     else
       Branch (new_env, pred, Open, Open)
 
@@ -46,7 +46,7 @@ and expand_not env = function
   | Predicate _ as pred ->
     let new_env = add_to_env env (string_of_formula (negate pred)) in
     if Env.mem (string_of_formula pred) (fst env) then
-      Closed new_env
+      Closed (new_env, true)
     else
       Branch
         (new_env, negate pred, Open, Open)
@@ -54,21 +54,21 @@ and expand_not env = function
 (** [expand_and f1 f2] expands [f1 and f2] into a tableau. *)
 and expand_and env f1 f2 =
   let t = match f1, f2 with
-    | Forall _, _ -> join_and (expand env f2) f1
+    | Forall _, _ | _, Exists _ -> join_and (expand env f2) f1
     | _ -> join_and (expand env f1) f2
   in
-  Branch (env, And (f1, f2), t, Closed env)
+  Branch (env, And (f1, f2), t, Closed (env, false))
 
 (** [join_and t1 t2] will extend all [Open] leaves of [t1] with [t2]. *)
 and join_and t f =
   match t with
   | Branch (env, f', Open, Open) -> 
     let expanded = expand env f in
-    Branch (env, f', expanded, if expanded = Open then Open else Closed env)
-  | Branch (env, f', Closed env', r1) -> Branch (env, f', Closed env', join_and r1 f)
-  | Branch (env, f', l1, Closed env') -> Branch (env, f', join_and l1 f, Closed env')
+    Branch (env, f', expanded, if expanded = Open then Open else Closed (env, false))
+  | Branch (env, f', Closed (env', false), r1) -> Branch (env, f', Closed (env', false), join_and r1 f)
+  | Branch (env, f', l1, Closed (env', false)) -> Branch (env, f', join_and l1 f, Closed (env', false))
   | Branch (env, f', l1, r1) -> Branch (env, f', join_and l1 f, join_and r1 f)
-  | Closed env -> Closed env
+  | Closed _ as closed -> closed
   | Open -> failwith "unexpected Open in `and` expansion"
 
 (** [expand_or f1 f2] expands [f1 or f2] into a tableau. *)
@@ -76,8 +76,8 @@ and expand_or env f1 f2 =
   let left, right = expand env f1, expand env f2 in
   match left, right with
   | Open, Open -> Branch (env, Or (f1, f2), Open, Open)
-  | Open, _ -> Branch (env, Or (f1, f2), Closed env, right)
-  | _, Open -> Branch (env, Or (f1, f2), left, Closed env)
+  | Open, _ -> Branch (env, Or (f1, f2), Closed (env, false), right)
+  | _, Open -> Branch (env, Or (f1, f2), left, Closed (env, false))
   | _, _ -> Branch (env, Or (f1, f2), left, right)
 
 (** [expand_implies f1 f2] expands [f1 -> f2] into a tableau. *)
@@ -109,11 +109,11 @@ and join_forall t var f var_cnt =
   match t with
   | Branch (env, f', Open, Open) -> 
     let expanded = expand_forall env var f var_cnt in
-    Branch (env, f', expanded, if expanded = Open then Open else Closed env)
-  | Branch (env, f', Closed env', r1) -> Branch (env, f', Closed env', join_forall r1 var f var_cnt)
-  | Branch (env, f', l1, Closed env') -> Branch (env, f', join_forall l1 var f var_cnt, Closed env')
+    Branch (env, f', expanded, if expanded = Open then Open else Closed (env, false))
+  | Branch (env, f', Closed (env', _), r1) -> Branch (env, f', Closed (env', false), join_forall r1 var f var_cnt)
+  | Branch (env, f', l1, Closed (env', _)) -> Branch (env, f', join_forall l1 var f var_cnt, Closed (env', false))
   | Branch (env, f', l1, r1) -> Branch (env, f', join_forall l1 var f var_cnt, join_forall r1 var f var_cnt)
-  | Closed env -> Closed env
+  | Closed _ as closed -> closed
   | Open -> failwith "unexpected Open in `forall` expansion"
 
 (** [expand_exists x f] expands [exists x. f] into a tableau.
