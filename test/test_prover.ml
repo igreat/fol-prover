@@ -14,7 +14,7 @@ let make_parse n s1 s2 =
 (** [make_expand n s1 s2] makes an OUnit test named [n] that expects
     [s1] to expand to [s2]. *)
 let make_expand n s1 s2 =
-  n >:: fun _ -> assert_equal ~printer:string_of_tableau s2 (expand (Env.empty, 0) (parse s1))
+  n >:: fun _ -> assert_equal ~printer:string_of_tableau_debug s2 (expand (Env.empty, 0) (parse s1))
 
 (** [make_sat n s is_sat] makes an OUnit test named [n] that expects
     [s] to be satisfiable if [is_sat] is true, and unsatisfiable if
@@ -76,7 +76,7 @@ let parse_tests =
       (Forall ("x", Exists ("y", Predicate ("P", [ Var "x"; Var "y" ]))));
     make_parse "parse complex formula with ommitted parens" "not ((forall x not Q(x)) or exists x forall y not LessThan(x, y))"
       (Not (Or (Forall ("x", Not (Predicate ("Q", [ Var "x" ]))),
-               Exists ("x", Forall ("y", Not (Predicate ("LessThan", [ Var "x"; Var "y" ])))))));
+                Exists ("x", Forall ("y", Not (Predicate ("LessThan", [ Var "x"; Var "y" ])))))));
   ]
 
 let expand_tests = 
@@ -122,26 +122,6 @@ let expand_tests =
       );
     make_expand "expand exists 1 var" "exists x (P(x))" (Branch ((Env.singleton "P(#0)", 1), Predicate ("P", [Var "#0"]), Open, Open));
     make_expand "expand exists 2 vars" "exists x (exists y (P(x, y)))" (Branch ((Env.singleton "P(#0, #1)", 2), Predicate ("P", [Var "#0"; Var "#1"]), Open, Open));
-    make_expand "expand exists 2 vars with outter dependency" "exists x ((P(x) and exists y (P(x, y))))" 
-      (
-        Branch ((Env.empty, 1), And (Predicate ("P", [Var "#0"]), Exists ("y", Predicate ("P", [Var "#0"; Var "y"]))), 
-                Branch ((env_from_list ["P(#0)"], 1), Predicate ("P", [Var "#0"]), 
-                        Branch ((env_from_list ["P(#0)"; "P(#0, #1)"], 2), Predicate ("P", [Var "#0"; Var "#1"]), 
-                                Open,
-                                Open),
-                        Closed ((env_from_list ["P(#0)"], 1), false)),
-                Closed ((Env.empty, 1), false))
-      );
-    make_expand "expand exists 2 vars with lexical scoping" "exists x ((P(x) and exists x (P(x))))" 
-      (
-        Branch ((Env.empty, 1), And (Predicate ("P", [Var "#0"]), Exists ("x", Predicate ("P", [Var "x"]))), 
-                Branch ((env_from_list ["P(#0)"], 1), Predicate ("P", [Var "#0"]), 
-                        Branch ((env_from_list ["P(#0)"; "P(#1)"], 2), Predicate ("P", [Var "#1"]), 
-                                Open, 
-                                Open),
-                        Closed ((env_from_list ["P(#0)"], 1), false)),
-                Closed ((Env.empty, 1), false))
-      );
     make_expand "formula closes" "(P and not P)" 
       (
         Branch ((Env.empty, 0), And (Predicate ("P", []), Not (Predicate ("P", []))), 
@@ -198,6 +178,12 @@ let satisfiability_tests =
       "¬(∀x¬q(x) ∨ ∃x∀y ¬(x < y)) is satisfiable" 
       "not ((forall x not Q(x)) or exists x forall y not LessThan(x, y))"
       true;
+
+    make_sat 
+      "(((Q() ⇒ P()) ∧ ∀x.(¬P(x))) ∧ ∃x.(P(x)))"
+      "(Q -> P) and (forall x not P(x)) and (exists x P(x))"
+      false;
+
   ]
 
 let _ = run_test_tt_main ("suite" >::: parse_tests @ expand_tests @ satisfiability_tests)

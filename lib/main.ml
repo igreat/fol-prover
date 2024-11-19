@@ -31,6 +31,8 @@ let rec string_of_tableau t =
 
   let rec string_of_tableau_aux node prefix is_last =
     match node with
+    | Branch (env, f, Open, Open) -> 
+      Buffer.add_string buffer (prefix ^ (if is_last then "└── ○ " else "├── ○ ") ^ string_of_formula f ^ " " ^ string_of_env env ^ "\n")
     | Branch (_, f, Closed (_, false), right) ->
       Buffer.add_string buffer (prefix ^ (if is_last then "└── " else "├── ") ^ string_of_formula f ^ "\n");
       let new_prefix = prefix ^ (if is_last then "    " else "│   ") in
@@ -55,3 +57,24 @@ let rec string_of_tableau t =
 (** [string_of_env env] converts an environment [env] to its string representation *)
 and string_of_env (env, i) =
   "[" ^ string_of_int i ^ "]" ^ "{" ^ String.concat ", " (List.map (fun x -> x) (Env.elements env)) ^ "}"
+
+(** [string_of_tableau_debug t] converts a tableau [t] to its string representation 
+    with debugging information, including every single node. *)
+and string_of_tableau_debug t =
+  let buffer = Buffer.create 1024 in
+  Buffer.add_string buffer "Tableau (Debug Mode)\n";
+
+  let rec string_of_tableau_aux node prefix is_last =
+    match node with
+    | Branch (env, f, left, right) ->
+      Buffer.add_string buffer (prefix ^ (if is_last then "└── " else "├── ") ^ string_of_formula f ^ " " ^ string_of_env env ^ "\n");
+      let new_prefix = prefix ^ (if is_last then "    " else "│   ") in
+      string_of_tableau_aux left new_prefix false;
+      string_of_tableau_aux right new_prefix true
+    | Closed (env, is_contradiction) ->
+      Buffer.add_string buffer (prefix ^ (if is_last then "└── " else "├── ") ^ (if is_contradiction then "⊥" else "○") ^ " " ^ string_of_env env ^ "\n")
+    | Open -> ()
+  in
+
+  string_of_tableau_aux t "" true;
+  Buffer.contents buffer
