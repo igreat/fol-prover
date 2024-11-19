@@ -22,7 +22,8 @@ Tableau
 ```
 
 ## How to use
-First you need to ensure you have dune installed. Once you do, run the following commands to build the project:
+
+First you need to ensure you have [dune](https://dune.build/) installed. Once you do, run the following commands to build the project:
 
 ```bash
 dune build
@@ -47,7 +48,7 @@ Here's an example of a formula that can be checked by the prover:
         (exists x P(x))
 ```
 
-This is an unsatisfiable formula (think about why!). If you running the following command:
+This is an unsatisfiable formula (think about why!). If you run the following command:
 
 ```bash
 prover --satisfiable --tableau examples/example1.txt
