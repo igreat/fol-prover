@@ -3,22 +3,22 @@
 This is a tiny theorem prover that will determine the satisfiability or validity of a given first order logic formula. It's based on Tableaux method with a lot of implementation details designed by me.
 
 ```haskell
-(Q -> P) and 
-    (forall x not P(x)) and 
-        (exists x P(x))
+(Rain -> Wet)
+and (forall x not Mortal(x)) 
+and (exists x Mortal(x))
 ```
 
 ```haskell
 Unsatisfiable
 Tableau
-└── (((Q() ⇒ P()) ∧ ∀x.(¬P(x))) ∧ ∃x.(P(x)))
-    └── P(#0)
-        └── ((Q() ⇒ P()) ∧ ∀x.(¬P(x)))
-            └── (Q() ⇒ P())
-                ├── ¬Q()
-                │   └── ⊥ [1]{P(#0), ¬P(#0), ¬Q()}
-                └── P()
-                    └── ⊥ [1]{P(#0), P(), ¬P(#0)}
+└── (((Rain() ⇒ Wet()) ∧ ∀x.(¬Mortal(x))) ∧ ∃x.(Mortal(x)))
+    └── Mortal(#0)
+        └── ((Rain() ⇒ Wet()) ∧ ∀x.(¬Mortal(x)))
+            └── (Rain() ⇒ Wet())
+                ├── ¬Rain()
+                │   └── ⊥ [1]{Mortal(#0), ¬Mortal(#0), ¬Rain()}
+                └── Wet()
+                    └── ⊥ [1]{Mortal(#0), Wet(), ¬Mortal(#0)}
 ```
 
 ## How to use
@@ -43,9 +43,9 @@ The `--satisfiable` and `valid` flags are to specify if you want to check for sa
 Here's an example of a formula that can be checked by the prover:
 
 ```haskell
-(Q -> P) and 
-    (forall x not P(x)) and 
-        (exists x P(x))
+(Rain -> Wet)
+and (forall x not Mortal(x)) 
+and (exists x Mortal(x))
 ```
 
 This is an unsatisfiable formula (think about why!). If you run the following command:
@@ -59,17 +59,25 @@ The output will be:
 ```haskell
 Unsatisfiable
 Tableau
-└── (((Q() ⇒ P()) ∧ ∀x.(¬P(x))) ∧ ∃x.(P(x)))
-    └── P(#0)
-        └── ((Q() ⇒ P()) ∧ ∀x.(¬P(x)))
-            └── (Q() ⇒ P())
-                ├── ¬Q()
-                │   └── ⊥ [1]{P(#0), ¬P(#0), ¬Q()}
-                └── P()
-                    └── ⊥ [1]{P(#0), P(), ¬P(#0)}
+└── (((Rain() ⇒ Wet()) ∧ ∀x.(¬Mortal(x))) ∧ ∃x.(Mortal(x)))
+    └── Mortal(#0)
+        └── ((Rain() ⇒ Wet()) ∧ ∀x.(¬Mortal(x)))
+            └── (Rain() ⇒ Wet())
+                ├── ¬Rain()
+                │   └── ⊥ [1]{Mortal(#0), ¬Mortal(#0), ¬Rain()}
+                └── Wet()
+                    └── ⊥ [1]{Mortal(#0), Wet(), ¬Mortal(#0)}
 ```
 
-Notice that `⊥` signifies a closed branch. If all branches are closed, then the formula is unsatisfiable. If there's an open branch, then the formula is satisfiable.
+Notice that `⊥` signifies a closed branch. If all branches are closed, then the formula is unsatisfiable. If there's an open branch, then the formula is satisfiable. Notice that the format of the "env state" is `[#used_constants]{atomic_fmlas...}`.
+
+Feel free to try this formula as well and check if it's valid!
+
+```haskell
+(forall x Man(x) -> Mortal(x))
+and (forall x Socrates(x) -> Man(x)) -> 
+    (forall x Socrates(x) -> Mortal(x))
+```
 
 ## Syntax
 

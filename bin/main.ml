@@ -42,9 +42,10 @@ let () =
   if !check_satisfiable then
     print_endline (if is_satisfiable formula then "Satisfiable" else "Unsatisfiable");
   if !check_valid then
-    print_endline (if is_valid formula then "Valid" else "Invalid");
+    print_endline (if is_valid formula then "Valid" else "Not valid");
   if !display_tableau then
-    print_endline (string_of_tableau (expand (Env.empty, 0) formula));
+    let fmla = if !check_valid then (negate formula) else formula in
+    print_endline (string_of_tableau (expand (Env.empty, 0) fmla));
 
   if not !check_satisfiable && not !check_valid && not !display_tableau then begin
     prerr_endline "Error: No action specified.";

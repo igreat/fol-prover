@@ -54,7 +54,10 @@ and expand_not env = function
 (** [expand_and f1 f2] expands [f1 and f2] into a tableau. *)
 and expand_and env f1 f2 =
   let t = match f1, f2 with
-    | Forall _, _ | _, Exists _ -> join_and (expand env f2) f1
+    | Forall _, _ 
+    | _, Exists _ 
+    | Not (Exists _), _ 
+    | _, Not (Forall _) -> join_and (expand env f2) f1
     | _ -> join_and (expand env f1) f2
   in
   Branch (env, And (f1, f2), t, Closed (env, false))
@@ -97,7 +100,7 @@ and expand_iff env f1 f2 =
 (** [expand_forall x f cnt] expands [forall x. f] into a tableau.
     Note: expansion continues until either the max number of constants is reached or the tableau is closed. *)
 and expand_forall (env, i) var f var_cnt = 
-  if i >= max_constants then
+  if var_cnt >= max_constants then
     Open (* TODO: handle this better *)
   else
     let f_subst = subst_formula var (Var ("#" ^ string_of_int var_cnt)) f in

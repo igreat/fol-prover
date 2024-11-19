@@ -1,4 +1,3 @@
-(Q -> P)
-and (forall x not P(x)) 
-    and (exists x P(x))
-
+(Rain -> Wet)
+and (forall x not Mortal(x)) 
+and (exists x Mortal(x))

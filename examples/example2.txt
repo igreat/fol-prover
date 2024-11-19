@@ -1,0 +1,3 @@
+(forall x Man(x) -> Mortal(x))
+and (forall x Socrates(x) -> Man(x)) -> 
+    (forall x Socrates(x) -> Mortal(x))
