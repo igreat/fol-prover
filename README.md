@@ -88,7 +88,7 @@ The connectives for the formulas is as follows in order of precedence (from high
 - `<->`: the logical biconditional operator
 - `forall x`: the universal quantifier for any variable `x`
 - `exists x`: the existential quantifier for any variable `x`
-- `Predicate(...args)`: a predicate with a list of arguments
+- `Predicate(...terms)`: a predicate with a list of terms
 - `( f )`: parentheses to force order of operations
 
 Note: predicates MUST start with a capital letter, my recommendation is to use **PascalCase** for them. Similarly, variables and functions should start with a lowercase letter, my recommendation is to use **snake_case** for them.
