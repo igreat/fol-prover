@@ -53,6 +53,30 @@ let parse_tests =
     make_parse "parse implies" "(P -> Q)"
       (Implies (Predicate ("P", []), Predicate ("Q", [])));
     make_parse "parse iff" "(P <-> Q)" (Iff (Predicate ("P", []), Predicate ("Q", [])));
+    make_parse "parse and with ommitted parens" "P(x) and Q(y)"
+      (And (Predicate ("P", [ Var "x" ]), Predicate ("Q", [ Var "y" ])));
+    make_parse "parse or with ommitted parens" "P(x) or Q(y)"
+      (Or (Predicate ("P", [ Var "x" ]), Predicate ("Q", [ Var "y" ])));
+    make_parse "parse or/and with ommitted parens" "P(x) or Q(y) and R(z)"
+      (Or (Predicate ("P", [ Var "x" ]),
+           And (Predicate ("Q", [ Var "y" ]), Predicate ("R", [ Var "z" ]))));
+    make_parse "parse implies with ommitted parens" "P(x) -> Q(y) and R(z)"
+      (Implies (Predicate ("P", [ Var "x" ]),
+                And (Predicate ("Q", [ Var "y" ]), Predicate ("R", [ Var "z" ]))));
+    make_parse "parse iff with ommitted parens" "P(x) <-> Q(y) and R(z)"
+      (Iff (Predicate ("P", [ Var "x" ]),
+            And (Predicate ("Q", [ Var "y" ]), Predicate ("R", [ Var "z" ]))));
+    make_parse "parse quantifier with ommitted parens" "exists x P(x) and Q(y) or R(z)"
+      (Exists ("x", Or (And (Predicate ("P", [ Var "x" ]), Predicate ("Q", [ Var "y" ])),
+                        Predicate ("R", [ Var "z" ]))));
+    make_parse "parse quantifier with ommitted parens more" "exists x P(x) and Q(y) or R(z) and S(w)"
+      (Exists ("x", Or (And (Predicate ("P", [ Var "x" ]), Predicate ("Q", [ Var "y" ])),
+                        And (Predicate ("R", [ Var "z" ]), Predicate ("S", [ Var "w" ])))));
+    make_parse "parse with chained quantifiers" "forall x exists y P(x, y)"
+      (Forall ("x", Exists ("y", Predicate ("P", [ Var "x"; Var "y" ]))));
+    make_parse "parse complex formula with ommitted parens" "not ((forall x not Q(x)) or exists x forall y not LessThan(x, y))"
+      (Not (Or (Forall ("x", Not (Predicate ("Q", [ Var "x" ]))),
+               Exists ("x", Forall ("y", Not (Predicate ("LessThan", [ Var "x"; Var "y" ])))))));
   ]
 
 let expand_tests = 
@@ -172,11 +196,7 @@ let satisfiability_tests =
     (* Formula from lectures *)
     make_sat 
       "¬(∀x¬q(x) ∨ ∃x∀y ¬(x < y)) is satisfiable" 
-      "not (
-        forall x (not Q(x))
-        or 
-        exists x (forall y (not P(x, y)))
-      )"
+      "not ((forall x not Q(x)) or exists x forall y not LessThan(x, y))"
       true;
   ]
 

@@ -14,8 +14,12 @@ open Ast
 %token <string> PREDICATE_ID
 %token EOF
 
-%left EXISTS
-%left FORALL 
+%nonassoc FORALL EXISTS
+%left IFF
+%left IMPLIES
+%left OR
+%left AND
+%right NOT
 
 %start <Ast.formula> prog
 
@@ -27,12 +31,13 @@ prog:
 
 formula:
   | NOT; f = formula { Not f }
-  | FORALL; x = TERM_ID; LPAREN; f = formula; RPAREN { Forall (x, f) }
-  | EXISTS; x = TERM_ID; LPAREN; f = formula; RPAREN { Exists (x, f) }
-  | LPAREN; f1 = formula; AND; f2 = formula; RPAREN { And (f1, f2) }
-  | LPAREN; f1 = formula; OR; f2 = formula; RPAREN { Or (f1, f2) }
-  | LPAREN; f1 = formula; IMPLIES; f2 = formula; RPAREN { Implies (f1, f2) }
-  | LPAREN; f1 = formula; IFF; f2 = formula; RPAREN { Iff (f1, f2) }
+  | FORALL; x = TERM_ID; f = formula { Forall (x, f) }
+  | EXISTS; x = TERM_ID; f = formula { Exists (x, f) }
+  | f1 = formula; AND; f2 = formula; { And (f1, f2) }
+  | f1 = formula; OR; f2 = formula; { Or (f1, f2) }
+  | f1 = formula; IMPLIES; f2 = formula; { Implies (f1, f2) }
+  | f1 = formula; IFF; f2 = formula; { Iff (f1, f2) }
+  | LPAREN f = formula RPAREN { f }
   | p = predicate { p }
   ;
 
